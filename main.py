@@ -44,6 +44,29 @@ async def offline(ctx):
         active_staff.remove(ctx.author.id)
         await ctx.send(f"❌ {ctx.author.mention} sıradan çıktı.")
 
+# YENİ: PATRON KOMUTU (Uyuyanları sıradan atmak için)
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def zorla_offline(ctx, member: discord.Member):
+    if member.id in active_staff:
+        active_staff.remove(member.id)
+        await ctx.send(f"🔨 Patron masaya yumruğunu vurdu! {member.mention} zorla sıradan çıkarıldı.")
+    else:
+        await ctx.send("Kanka bu adam zaten sırada değil.")
+
+# YENİ: SIRA LİSTESİ (Kim online görmek için kıyağım olsun)
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def liste(ctx):
+    if not active_staff:
+        await ctx.send("Şu an sırada kimse yok, herkes yatışta!")
+        return
+    
+    mesaj = "**Güncel Satış Sırası:**\n"
+    for i, staff_id in enumerate(active_staff, 1):
+        mesaj += f"{i}. <@{staff_id}>\n"
+    await ctx.send(mesaj)
+
 @bot.event
 async def on_guild_channel_create(channel):
     if channel.name.startswith('ticket-'):
