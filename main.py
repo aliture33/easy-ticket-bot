@@ -14,7 +14,8 @@ def run():
     app.run(host='0.0.0.0', port=8080)
 
 def keep_alive():
-    t = Thread(target=run)
+    # daemon=True yaptık ki bot çökerse zombi gibi yaşamasın, Render hatayı anlasın!
+    t = Thread(target=run, daemon=True)
     t.start()
 
 # --- BOT MANTIĞI ---
@@ -27,7 +28,7 @@ active_staff = []
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user} sahaya indi!')
+    print(f'BAŞARILI: {bot.user} sahaya indi!')
 
 @bot.command()
 async def online(ctx):
@@ -45,17 +46,34 @@ async def offline(ctx):
 
 @bot.event
 async def on_guild_channel_create(channel):
-    # Ticket kanalları genellikle 'ticket-' ile başlar
     if channel.name.startswith('ticket-'):
         if not active_staff:
-            return # Online kimse yoksa bir şey yapma
-
-        # Sıradakini al, sona at
+            return 
         assigned_id = active_staff.pop(0)
         active_staff.append(assigned_id)
-        
         await channel.send(f"🔔 Yeni Müşteri! Sıra sende: <@{assigned_id}>")
 
 keep_alive()
-# Tokeni Render panelinden çekeceğiz
-bot.run(os.environ.get('DISCORD_TOKEN'))
+
+# --- HATA YAKALAYICI (BİZİM AJAN) ---
+token = os.environ.get('DISCORD_TOKEN')
+
+if not token:
+    print("--------------------------------------------------")
+    print("KRİTİK HATA: DISCORD_TOKEN bulunamadı!")
+    print("Render'da Environment Variables kısmına tokeni girmemişsin veya ismini yanlış yazmışsın.")
+    print("--------------------------------------------------")
+else:
+    try:
+        bot.run(token)
+    except discord.errors.PrivilegedIntentsRequired:
+        print("--------------------------------------------------")
+        print("KRİTİK HATA: Discord Developer Portal'dan yetkileri (Intents) açmamışsın kanka!")
+        print("Portalda 'Bot' sekmesine girip 3 tane Intent ayarını mavi (açık) yap.")
+        print("--------------------------------------------------")
+    except discord.errors.LoginFailure:
+        print("--------------------------------------------------")
+        print("KRİTİK HATA: Token yanlış! Developer Portal'dan yanlış şeyi kopyalamışsın.")
+        print("--------------------------------------------------")
+    except Exception as e:
+        print(f"BİLİNMEYEN HATA: {e}")
